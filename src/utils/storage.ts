@@ -21,6 +21,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
 };
 
 export const DEFAULT_SECURITY: PinSecurityState = {
+  pinEnabled: false,
   isConfigured: false,
   pinLength: 4,
   salt: '',

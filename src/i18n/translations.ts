@@ -139,6 +139,13 @@ export interface TranslationStrings {
   // Settings
   settingsTitle: string;
   securitySection: string;
+  passwordLockToggle: string;
+  passwordLockDesc: string;
+  statusOn: string;
+  statusOff: string;
+  passwordEnabledMsg: string;
+  passwordDisabledMsg: string;
+  pinDigitsHint: string;
   changePin: string;
   autoLockBackground: string;
   autoLockDesc: string;
@@ -190,6 +197,16 @@ export interface TranslationStrings {
   openInBrowser: string;
   copyAppLink: string;
   linkCopied: string;
+  shareWithFriends: string;
+  shareWithFriendsDesc: string;
+  sharePrivacyNote: string;
+  shareViaWhatsapp: string;
+  shareNow: string;
+  scanQrToOpen: string;
+  shareMessageText: string;
+  friendStepsTitle: string;
+  friendStep1: string;
+  friendStep2: string;
   appInfoSection: string;
   appInfoTitle: string;
   appInfoDesc: string;
@@ -334,7 +351,14 @@ export const TRANSLATIONS: Record<Language, TranslationStrings> = {
     shareCol: 'હિસ્સો',
     transactionsCount: 'વ્યવહારો',
     settingsTitle: 'સેટિંગ્સ',
-    securitySection: 'સુરક્ષા અને PIN લૉક',
+    securitySection: 'સુરક્ષા અને પાસવર્ડ લૉક',
+    passwordLockToggle: 'પાસવર્ડ લૉક (PIN)',
+    passwordLockDesc: 'એપ ખોલતી વખતે 4 અથવા 6 અંકનો સુરક્ષા PIN પૂછો',
+    statusOn: 'ચાલુ (ON)',
+    statusOff: 'બંધ (OFF)',
+    passwordEnabledMsg: 'પાસવર્ડ લૉક ચાલુ કરવામાં આવ્યો.',
+    passwordDisabledMsg: 'પાસવર્ડ લૉક બંધ કરવામાં આવ્યો.',
+    pinDigitsHint: 'ફક્ત 4 અથવા 6 અંકનો PIN દાખલ કરો.',
     changePin: 'PIN બદલો',
     autoLockBackground: 'બેકગ્રાઉન્ડમાં જતા ઑટો-લૉક',
     autoLockDesc: 'જ્યારે એપ બંધ થાય અથવા અન્ય એપ પર જાઓ ત્યારે તરત લૉક કરો',
@@ -386,6 +410,16 @@ export const TRANSLATIONS: Record<Language, TranslationStrings> = {
     openInBrowser: 'નવા બ્રાઉઝર ટૅબમાં ખોલો',
     copyAppLink: 'એપ લિંક કૉપિ કરો',
     linkCopied: 'લિંક કૉપિ થઈ ગઈ',
+    shareWithFriends: 'મિત્રો સાથે એપ શેર કરો',
+    shareWithFriendsDesc: 'તમારા મિત્રોને લિંક અથવા QR કોડ મોકલો જેથી તેઓ પોતાના મોબાઇલમાં પોતાનો અલગ અને ખાનગી હિસાબ રાખી શકે.',
+    sharePrivacyNote: 'દરેક મિત્રનો હિસાબ ફક્ત તેમના પોતાના મોબાઇલમાં જ સચવાશે — તમારો ડેટા કોઈની સાથે શેર થશે નહીં.',
+    shareViaWhatsapp: 'WhatsApp પર મોકલો',
+    shareNow: 'મોબાઇલમાંથી શેર કરો',
+    scanQrToOpen: 'મિત્રના મોબાઇલથી QR કોડ સ્કેન કરો',
+    shareMessageText: 'સ્માર્ટ દૈનિક હિસાબ — તમારો પોતાનો દૈનિક આવક-ખર્ચ હિસાબ રાખવા માટે આ લિંક મોબાઇલમાં ખોલો અને Home Screen પર ઇન્સ્ટૉલ કરો:',
+    friendStepsTitle: 'મિત્ર પોતાના મોબાઇલમાં કેવી રીતે વાપરી શકે:',
+    friendStep1: 'મિત્રના મોબાઇલમાં આ લિંક ખોલો (અથવા QR કોડ સ્કેન કરો).',
+    friendStep2: 'સેટિંગ્સ → મોબાઇલ એપ ઇન્સ્ટૉલ કરો પર ટૅપ કરીને પોતાનો અલગ હિસાબ શરૂ કરો.',
     appInfoSection: 'એપ માહિતી અને Android સોર્સ',
     appInfoTitle: 'સ્માર્ટ દૈનિક હિસાબ v1.0',
     appInfoDesc: '100% ખાનગી, ઑફલાઇન-ફર્સ્ટ વ્યક્તિગત હિસાબ એપ્લિકેશન. તમારો બધો ડેટા ફક્ત તમારા ઉપકરણ પર જ સુરક્ષિત રીતે સંગ્રહિત થાય છે.',
@@ -533,7 +567,14 @@ export const TRANSLATIONS: Record<Language, TranslationStrings> = {
     shareCol: 'हिस्सा',
     transactionsCount: 'लेन-देन',
     settingsTitle: 'सेटिंग्स',
-    securitySection: 'सुरक्षा और PIN लॉक',
+    securitySection: 'सुरक्षा और पासवर्ड लॉक',
+    passwordLockToggle: 'पासवर्ड लॉक (PIN)',
+    passwordLockDesc: 'ऐप खोलते समय 4 या 6 अंकों का सुरक्षा PIN पूछें',
+    statusOn: 'चालू (ON)',
+    statusOff: 'बंद (OFF)',
+    passwordEnabledMsg: 'पासवर्ड लॉक चालू कर दिया गया।',
+    passwordDisabledMsg: 'पासवर्ड लॉक बंद कर दिया गया।',
+    pinDigitsHint: 'केवल 4 या 6 अंकों का PIN दर्ज करें।',
     changePin: 'PIN बदलें',
     autoLockBackground: 'बैकग्राउंड में जाने पर ऑटो-लॉक',
     autoLockDesc: 'जब ऐप बैकग्राउंड में जाए तो तुरंत लॉक करें',
@@ -585,6 +626,16 @@ export const TRANSLATIONS: Record<Language, TranslationStrings> = {
     openInBrowser: 'नए ब्राउज़र टैब में खोलें',
     copyAppLink: 'ऐप लिंक कॉपी करें',
     linkCopied: 'लिंक कॉपी हो गया',
+    shareWithFriends: 'दोस्तों के साथ ऐप शेयर करें',
+    shareWithFriendsDesc: 'अपने दोस्तों को लिंक या QR कोड भेजें ताकि वे अपने मोबाइल पर अपना अलग और निजी हिसाब रख सकें।',
+    sharePrivacyNote: 'हर दोस्त का हिसाब केवल उनके अपने मोबाइल में सुरक्षित रहेगा — आपका डेटा किसी के साथ साझा नहीं होगा।',
+    shareViaWhatsapp: 'WhatsApp पर भेजें',
+    shareNow: 'मोबाइल से शेयर करें',
+    scanQrToOpen: 'दोस्त के मोबाइल से QR कोड स्कैन करें',
+    shareMessageText: 'स्मार्ट दैनिक हिसाब — अपना व्यक्तिगत दैनिक आय-खर्च हिसाब रखने के लिए यह लिंक मोबाइल में खोलें और Home Screen पर इंस्टॉल करें:',
+    friendStepsTitle: 'दोस्त अपने मोबाइल में कैसे उपयोग करें:',
+    friendStep1: 'दोस्त के मोबाइल में यह लिंक खोलें (या QR कोड स्कैन करें)।',
+    friendStep2: 'सेटिंग्स → मोबाइल ऐप इंस्टॉल करें पर टैप करके अपना अलग हिसाब शुरू करें।',
     appInfoSection: 'ऐप जानकारी और Android स्रोत',
     appInfoTitle: 'स्मार्ट दैनिक हिसाब v1.0',
     appInfoDesc: '100% निजी, ऑफ़लाइन-फर्स्ट व्यक्तिगत खर्च प्रबंधक। आपका सभी वित्तीय डेटा केवल आपके डिवाइस पर सुरक्षित रहता है।',
@@ -732,7 +783,14 @@ export const TRANSLATIONS: Record<Language, TranslationStrings> = {
     shareCol: 'Share',
     transactionsCount: 'txns',
     settingsTitle: 'Settings',
-    securitySection: 'Security & PIN Lock',
+    securitySection: 'Security & Password Lock',
+    passwordLockToggle: 'Password Lock (PIN)',
+    passwordLockDesc: 'Require a 4 or 6 digit security PIN when opening the app',
+    statusOn: 'ON',
+    statusOff: 'OFF',
+    passwordEnabledMsg: 'Password lock enabled.',
+    passwordDisabledMsg: 'Password lock disabled.',
+    pinDigitsHint: 'Please enter a 4 or 6 digit PIN.',
     changePin: 'Change PIN',
     autoLockBackground: 'Auto-lock in Background',
     autoLockDesc: 'Automatically require PIN when returning from background',
@@ -784,6 +842,16 @@ export const TRANSLATIONS: Record<Language, TranslationStrings> = {
     openInBrowser: 'Open in New Browser Tab',
     copyAppLink: 'Copy App Link',
     linkCopied: 'Link Copied',
+    shareWithFriends: 'Share App with Friends',
+    shareWithFriendsDesc: 'Send this app link or QR code to friends so each person can maintain their own separate, private ledger on their mobile.',
+    sharePrivacyNote: 'Each friend’s hisab stays strictly private on their own phone — your personal records are never shared.',
+    shareViaWhatsapp: 'Share on WhatsApp',
+    shareNow: 'Share via Mobile',
+    scanQrToOpen: 'Scan QR code with friend’s phone',
+    shareMessageText: 'Smart Daily Hisab — Open this link on your mobile and add to Home Screen to keep your own private daily income & expense ledger:',
+    friendStepsTitle: 'How your friend can use it on their mobile:',
+    friendStep1: 'Open this link (or scan the QR code) on your friend’s mobile browser.',
+    friendStep2: 'Tap Settings → Install Mobile App on their phone to start their own private ledger.',
     appInfoSection: 'App Information & Android Studio Project',
     appInfoTitle: 'Smart Daily Hisab v1.0',
     appInfoDesc: '100% private, offline-first personal finance ledger. No cloud sync or third-party sharing—your data stays exclusively on your device.',

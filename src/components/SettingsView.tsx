@@ -6,8 +6,12 @@ import {
   FileSpreadsheet,
   FileText,
   FolderCog,
+  KeyRound,
+  Lock,
   Moon,
   Plus,
+  Share2,
+  ShieldCheck,
   Smartphone,
   Sun,
   Trash2,
@@ -21,11 +25,13 @@ import {
   Category,
   CurrencyCode,
   Language,
+  PinSecurityState,
   Transaction,
   TransactionType,
 } from '../types/hisab';
 import { downloadAndroidStudioProjectZip } from '../utils/androidProjectExporter';
 import { getCategoryLabel } from '../utils/calculations';
+import { constantTimeEqual, hashSecret } from '../utils/crypto';
 import {
   exportBackupJSON,
   exportReportPDF,
@@ -36,12 +42,17 @@ import { CategoryIcon } from './CategoryIcon';
 
 interface SettingsViewProps {
   settings: AppSettings;
+  security: PinSecurityState;
   categories: Category[];
   transactions: Transaction[];
   t: TranslationStrings;
   isInstalled: boolean;
   onOpenInstall: () => void;
+  onOpenShare: () => void;
   onUpdateSettings: (next: AppSettings) => void;
+  onUpdateSecurity: (next: PinSecurityState) => void;
+  onSetupPin: () => void;
+  onLockNow: () => void;
   onUpsertCategory: (cat: Category) => void;
   onDeleteCategory: (id: string) => void;
   onRestoreBackup: (payload: BackupPayload) => void;
@@ -63,12 +74,17 @@ const COLOR_SWATCHES = [
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
   settings,
+  security,
   categories,
   transactions,
   t,
   isInstalled,
   onOpenInstall,
+  onOpenShare,
   onUpdateSettings,
+  onUpdateSecurity,
+  onSetupPin,
+  onLockNow,
   onUpsertCategory,
   onDeleteCategory,
   onRestoreBackup,
@@ -94,6 +110,57 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [catColor, setCatColor] = useState('#1D4ED8');
   const [catError, setCatError] = useState('');
   const [confirmDeleteCatId, setConfirmDeleteCatId] = useState<string | null>(null);
+
+  // Change PIN modal
+  const [showChangePinModal, setShowChangePinModal] = useState(false);
+  const [currentPinInput, setCurrentPinInput] = useState('');
+  const [newPinInput, setNewPinInput] = useState('');
+  const [confirmPinInput, setConfirmPinInput] = useState('');
+  const [changePinError, setChangePinError] = useState('');
+
+  const isPasswordOn = Boolean(security.pinEnabled && security.isConfigured);
+
+  const handleTogglePasswordLock = () => {
+    if (isPasswordOn) {
+      onUpdateSecurity({ ...security, pinEnabled: false });
+      onNotify(t.passwordDisabledMsg);
+    } else if (security.isConfigured && security.pinHash) {
+      onUpdateSecurity({ ...security, pinEnabled: true });
+      onNotify(t.passwordEnabledMsg);
+    } else {
+      onSetupPin();
+    }
+  };
+
+  const handleChangePinSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setChangePinError('');
+    const curHash = await hashSecret(currentPinInput, security.salt);
+    if (!constantTimeEqual(curHash, security.pinHash)) {
+      setChangePinError(t.wrongCurrentPin);
+      return;
+    }
+    if (!/^\d{4}$|^\d{6}$/.test(newPinInput)) {
+      setChangePinError(t.pinDigitsHint);
+      return;
+    }
+    if (newPinInput !== confirmPinInput) {
+      setChangePinError(t.pinMismatchError);
+      return;
+    }
+    const nextPinHash = await hashSecret(newPinInput, security.salt);
+    onUpdateSecurity({
+      ...security,
+      pinEnabled: true,
+      pinLength: newPinInput.length === 6 ? 6 : 4,
+      pinHash: nextPinHash,
+    });
+    setShowChangePinModal(false);
+    setCurrentPinInput('');
+    setNewPinInput('');
+    setConfirmPinInput('');
+    onNotify(t.pinChangedSuccess);
+  };
 
   const handleSaveCategory = (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,6 +209,113 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       <h1 className="text-xl font-bold text-slate-900 dark:text-white">{t.settingsTitle}</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* 0. Security & Password Lock (ON / OFF) */}
+        <section className="lg:col-span-2 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 sm:p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div
+                className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
+                  isPasswordOn
+                    ? 'bg-blue-700 text-white'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                }`}
+              >
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                  {t.securitySection}
+                </h2>
+                <p className="mt-0.5 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                  {t.passwordLockDesc}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isPasswordOn}
+              onClick={handleTogglePasswordLock}
+              className="flex items-center gap-3 self-start sm:self-center cursor-pointer shrink-0"
+            >
+              <span
+                className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
+                  isPasswordOn
+                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                {isPasswordOn ? t.statusOn : t.statusOff}
+              </span>
+              <span
+                className={`w-12 h-7 rounded-full p-1 transition-colors flex items-center ${
+                  isPasswordOn ? 'bg-blue-700 justify-end' : 'bg-slate-300 dark:bg-slate-700 justify-start'
+                }`}
+              >
+                <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
+              </span>
+            </button>
+          </div>
+
+          {isPasswordOn && (
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center justify-between sm:justify-start gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                    {t.autoLockBackground}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t.autoLockDesc}</p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-label={t.autoLockBackground}
+                  aria-checked={security.lockOnBackground}
+                  onClick={() =>
+                    onUpdateSecurity({
+                      ...security,
+                      lockOnBackground: !security.lockOnBackground,
+                    })
+                  }
+                  className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center shrink-0 cursor-pointer ${
+                    security.lockOnBackground
+                      ? 'bg-blue-700 justify-end'
+                      : 'bg-slate-300 dark:bg-slate-700 justify-start'
+                  }`}
+                >
+                  <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentPinInput('');
+                    setNewPinInput('');
+                    setConfirmPinInput('');
+                    setChangePinError('');
+                    setShowChangePinModal(true);
+                  }}
+                  className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <KeyRound className="w-3.5 h-3.5 text-blue-700 dark:text-blue-400" />
+                  <span>{t.changePin}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onLockNow}
+                  className="h-10 px-3.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>{t.lockNow}</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
+
         {/* 1. Language, Currency & Theme */}
         <section className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 sm:p-6 space-y-5">
           <h2 className="text-base font-bold text-slate-900 dark:text-white">
@@ -359,9 +533,30 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </section>
       </div>
 
-      {/* 5. App Info, PWA Install & Android Studio Kotlin Source */}
+      {/* 5. Share with Friends, App Info, PWA Install & Android Studio Kotlin Source */}
       <section className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 sm:p-6 space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Share App with Friends */}
+        <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Share2 className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+              <span>{t.shareWithFriends}</span>
+            </h2>
+            <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
+              {t.shareWithFriendsDesc}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onOpenShare}
+            className="h-11 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-[0.98] text-white text-sm font-semibold flex items-center justify-center gap-2 whitespace-nowrap shrink-0 cursor-pointer transition-all"
+          >
+            <Share2 className="w-4 h-4" />
+            <span>{t.shareWithFriends}</span>
+          </button>
+        </div>
+
+        <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-base font-bold text-slate-900 dark:text-white">{t.appInfoTitle}</h2>
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
@@ -642,6 +837,92 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
       )}
 
+      {/* Change PIN Modal */}
+      {showChangePinModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+          <form
+            noValidate
+            onSubmit={handleChangePinSubmit}
+            className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-xl space-y-4"
+          >
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">{t.changePinTitle}</h3>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
+                {t.currentPinLabel}
+              </label>
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                value={currentPinInput}
+                onChange={(e) => {
+                  setCurrentPinInput(e.target.value.replace(/\D/g, ''));
+                  setChangePinError('');
+                }}
+                className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-base font-bold tracking-widest text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
+                {t.enterNewPin}
+              </label>
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                value={newPinInput}
+                onChange={(e) => {
+                  setNewPinInput(e.target.value.replace(/\D/g, ''));
+                  setChangePinError('');
+                }}
+                placeholder="4 / 6"
+                className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-base font-bold tracking-widest text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
+                {t.confirmNewPin}
+              </label>
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                value={confirmPinInput}
+                onChange={(e) => {
+                  setConfirmPinInput(e.target.value.replace(/\D/g, ''));
+                  setChangePinError('');
+                }}
+                className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-base font-bold tracking-widest text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+              />
+            </div>
+
+            {changePinError && (
+              <p className="text-xs font-semibold text-red-600 dark:text-red-400" role="alert">
+                {changePinError}
+              </p>
+            )}
+
+            <div className="flex gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowChangePinModal(false)}
+                className="flex-1 h-11 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer"
+              >
+                {t.cancel}
+              </button>
+              <button
+                type="submit"
+                className="flex-1 h-11 rounded-xl bg-blue-700 hover:bg-blue-800 text-sm font-semibold text-white cursor-pointer"
+              >
+                {t.save}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 };

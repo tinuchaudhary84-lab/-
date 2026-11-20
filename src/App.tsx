@@ -8,8 +8,10 @@ import { BarChart3, History, Home, Plus, Settings } from 'lucide-react';
 import { DashboardView } from './components/DashboardView';
 import { HistoryView } from './components/HistoryView';
 import { InstallAppModal } from './components/InstallAppModal';
+import { PinLockScreen } from './components/PinLockScreen';
 import { ReportsView } from './components/ReportsView';
 import { SettingsView } from './components/SettingsView';
+import { ShareAppModal } from './components/ShareAppModal';
 import { TransactionFormView } from './components/TransactionFormView';
 import { DEFAULT_CATEGORIES } from './data/defaultCategories';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
@@ -20,13 +22,16 @@ import {
   AppSettings,
   BackupPayload,
   Category,
+  PinSecurityState,
   Transaction,
   TransactionType,
 } from './types/hisab';
 import {
+  DEFAULT_SECURITY,
   DEFAULT_SETTINGS,
   loadAllLocalData,
   saveCategories,
+  saveSecurityState,
   saveSettings,
   saveTransactions,
 } from './utils/storage';
@@ -36,12 +41,16 @@ export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [security, setSecurity] = useState<PinSecurityState>(DEFAULT_SECURITY);
+  const [isLocked, setIsLocked] = useState(false);
+  const [showPinSetup, setShowPinSetup] = useState(false);
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
   const [addInitialType, setAddInitialType] = useState<TransactionType>('expense');
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [showInstallModal, setShowInstallModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const isOnline = useOnlineStatus();
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
@@ -53,9 +62,27 @@ export default function App() {
       setTransactions(loaded.transactions);
       setCategories(loaded.categories);
       setSettings(loaded.settings);
+      setSecurity(loaded.security);
+      setIsLocked(Boolean(loaded.security.pinEnabled && loaded.security.isConfigured));
       setHydrated(true);
     });
   }, []);
+
+  // Auto-lock when moving to background if Password Lock & Auto-lock are enabled
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (
+        document.hidden &&
+        security.pinEnabled &&
+        security.isConfigured &&
+        security.lockOnBackground
+      ) {
+        setIsLocked(true);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [security.pinEnabled, security.isConfigured, security.lockOnBackground]);
 
   // Sync Tailwind dark mode class & document lang
   useEffect(() => {
@@ -80,6 +107,11 @@ export default function App() {
   const handleUpdateSettings = (next: AppSettings) => {
     setSettings(next);
     void saveSettings(next);
+  };
+
+  const handleUpdateSecurity = (next: PinSecurityState) => {
+    setSecurity(next);
+    void saveSecurityState(next);
   };
 
   const handleOpenInstall = async () => {
@@ -162,6 +194,42 @@ export default function App() {
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center text-sm font-medium text-slate-500">
         {t.appName}
       </div>
+    );
+  }
+
+  if (showPinSetup) {
+    return (
+      <PinLockScreen
+        security={security}
+        language={settings.language}
+        t={t}
+        forceSetup
+        onCancel={() => setShowPinSetup(false)}
+        onLanguageChange={(lang) => handleUpdateSettings({ ...settings, language: lang })}
+        onPinConfigured={(newSec) => {
+          handleUpdateSecurity(newSec);
+          setShowPinSetup(false);
+          setIsLocked(false);
+          showToast(t.passwordEnabledMsg);
+        }}
+        onUnlock={() => {
+          setShowPinSetup(false);
+          setIsLocked(false);
+        }}
+      />
+    );
+  }
+
+  if (isLocked && security.pinEnabled && security.isConfigured) {
+    return (
+      <PinLockScreen
+        security={security}
+        language={settings.language}
+        t={t}
+        onLanguageChange={(lang) => handleUpdateSettings({ ...settings, language: lang })}
+        onPinConfigured={(newSec) => handleUpdateSecurity(newSec)}
+        onUnlock={() => setIsLocked(false)}
+      />
     );
   }
 
@@ -296,12 +364,17 @@ export default function App() {
         {activeTab === 'settings' && (
           <SettingsView
             settings={settings}
+            security={security}
             categories={categories}
             transactions={transactions}
             t={t}
             isInstalled={isInstalled}
             onOpenInstall={() => void handleOpenInstall()}
+            onOpenShare={() => setShowShareModal(true)}
             onUpdateSettings={handleUpdateSettings}
+            onUpdateSecurity={handleUpdateSecurity}
+            onSetupPin={() => setShowPinSetup(true)}
+            onLockNow={() => setIsLocked(true)}
             onUpsertCategory={handleUpsertCategory}
             onDeleteCategory={handleDeleteCategory}
             onRestoreBackup={handleRestoreBackup}
@@ -428,6 +501,14 @@ export default function App() {
         t={t}
         onInstallPrompt={install}
         onClose={() => setShowInstallModal(false)}
+        onNotify={showToast}
+      />
+
+      {/* Share App with Friends Modal */}
+      <ShareAppModal
+        isOpen={showShareModal}
+        t={t}
+        onClose={() => setShowShareModal(false)}
         onNotify={showToast}
       />
     </div>

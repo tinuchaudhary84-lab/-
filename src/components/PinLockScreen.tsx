@@ -8,6 +8,8 @@ interface PinLockScreenProps {
   security: PinSecurityState;
   language: Language;
   t: TranslationStrings;
+  forceSetup?: boolean;
+  onCancel?: () => void;
   onLanguageChange: (lang: Language) => void;
   onPinConfigured: (newSecurity: PinSecurityState) => void;
   onUnlock: () => void;
@@ -17,6 +19,8 @@ export const PinLockScreen: React.FC<PinLockScreenProps> = ({
   security,
   language,
   t,
+  forceSetup = false,
+  onCancel,
   onLanguageChange,
   onPinConfigured,
   onUnlock,
@@ -40,7 +44,7 @@ export const PinLockScreen: React.FC<PinLockScreenProps> = ({
   const [recoveryInput, setRecoveryInput] = useState('');
   const [isResettingAfterRecovery, setIsResettingAfterRecovery] = useState(false);
 
-  const isSetupMode = !security.isConfigured || isResettingAfterRecovery;
+  const isSetupMode = forceSetup || !security.isConfigured || isResettingAfterRecovery;
 
   // Support physical keyboard digits on unlock / setup PIN entry
   useEffect(() => {
@@ -139,6 +143,7 @@ export const PinLockScreen: React.FC<PinLockScreenProps> = ({
     ]);
 
     const newSecurity: PinSecurityState = {
+      pinEnabled: true,
       isConfigured: true,
       pinLength,
       salt,
@@ -146,7 +151,7 @@ export const PinLockScreen: React.FC<PinLockScreenProps> = ({
       recoveryQuestion: t.securityQuestions[questionIndex] || t.securityQuestions[0],
       recoveryAnswerHash,
       recoveryKeyHash,
-      lockOnBackground: true,
+      lockOnBackground: security.lockOnBackground ?? true,
     };
 
     setGeneratedKey(recKey);
@@ -158,6 +163,7 @@ export const PinLockScreen: React.FC<PinLockScreenProps> = ({
     const pinHash = await hashSecret(newPin, security.salt || generateSalt());
     const updated: PinSecurityState = {
       ...security,
+      pinEnabled: true,
       isConfigured: true,
       pinLength,
       pinHash,
@@ -326,14 +332,18 @@ export const PinLockScreen: React.FC<PinLockScreenProps> = ({
             </p>
             {renderKeypad()}
 
-            {setupStep === 'confirm' && (
+            {(setupStep === 'confirm' || onCancel) && (
               <button
                 type="button"
                 onClick={() => {
-                  setSetupStep('create');
-                  setFirstPin('');
-                  setConfirmPin('');
-                  setErrorMsg('');
+                  if (setupStep === 'confirm') {
+                    setSetupStep('create');
+                    setFirstPin('');
+                    setConfirmPin('');
+                    setErrorMsg('');
+                  } else if (onCancel) {
+                    onCancel();
+                  }
                 }}
                 className="mt-4 w-full py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white cursor-pointer"
               >

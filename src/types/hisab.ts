@@ -39,6 +39,7 @@ export interface Transaction {
 }
 
 export interface PinSecurityState {
+  pinEnabled: boolean;
   isConfigured: boolean;
   pinLength: 4 | 6;
   salt: string;
